@@ -1,0 +1,66 @@
+#include <M5StickCPlus.h>
+
+// Object properties
+#define OBJECT_SIZE 10  // Size of the object (circle)
+int objectX = 0;      // Horizontal position of the object
+int objectY = 0;      // Vertical position of the object
+float speedX = 0;     // Speed of object in X direction
+float speedY = 0;     // Speed of object in Y direction
+float accelFactor = 50.0;  // Sensitivity for horizontal movement
+float verticalFactor = 30.0;  // Increased sensitivity for vertical movement
+
+void setup() {
+  M5.begin();  // Initialize M5StickC Plus
+  M5.Lcd.fillScreen(BLACK);  // Fill the screen with black initially
+  M5.Lcd.setTextSize(1);  // Set text size for output
+  M5.IMU.Init();  // Initialize the IMU (accelerometer and gyroscope)
+
+  // Set initial object position
+  objectX = TFT_WIDTH / 2;
+  objectY = TFT_HEIGHT / 2;
+}
+
+void loop() {
+  float ax, ay, az;  // Variables to store accelerometer data
+
+  // Get accelerometer data
+  M5.IMU.getAccelData(&ax, &ay, &az);
+
+  // Print accelerometer values for debugging
+  Serial.print("ax: ");
+  Serial.print(ax);
+  Serial.print(" ay: ");
+  Serial.print(ay);
+  Serial.print(" az: ");
+  Serial.println(az);
+
+  // Invert the X-axis movement by negating the accelerometer X value
+  speedX += -ax * accelFactor;  // Invert the X direction
+  speedY += ay * verticalFactor;   // Increased sensitivity for Y direction
+
+  // Limit the speed to prevent the object from moving too fast
+  speedX = constrain(speedX, -5, 5);
+  speedY = constrain(speedY, -5, 5);
+
+  // Update object's position based on speed
+  int newObjectX = objectX + speedX;
+  int newObjectY = objectY + speedY;
+
+  // Make sure the object stays within the screen bounds
+  newObjectX = constrain(newObjectX, OBJECT_SIZE, TFT_WIDTH - OBJECT_SIZE);
+  newObjectY = constrain(newObjectY, OBJECT_SIZE, TFT_HEIGHT - OBJECT_SIZE);
+
+  // Only clear the screen and draw the ball if the position has changed
+  if (newObjectX != objectX || newObjectY != objectY) {
+    objectX = newObjectX;
+    objectY = newObjectY;
+
+    // Clear the screen before redrawing the object
+    M5.Lcd.fillScreen(BLACK);
+
+    // Draw the object (a circle)
+    M5.Lcd.fillCircle(objectX, objectY, OBJECT_SIZE, YELLOW);
+  }
+
+  delay(15);  // Delay for smoother motion
+}
