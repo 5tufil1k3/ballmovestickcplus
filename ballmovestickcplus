@@ -1,66 +1,82 @@
 #include <M5StickCPlus.h>
 
-// Object properties
-#define OBJECT_SIZE 10  // Size of the object (circle)
-int objectX = 0;      // Horizontal position of the object
-int objectY = 0;      // Vertical position of the object
-float speedX = 0;     // Speed of object in X direction
-float speedY = 0;     // Speed of object in Y direction
-float accelFactor = 50.0;  // Sensitivity for horizontal movement
-float verticalFactor = 30.0;  // Increased sensitivity for vertical movement
+// Define object properties
+#define OBJECT_SIZE 10  // Diameter of the circular object in pixels. Affects how large the object appears on the screen.
+int objectX = 0;        // Horizontal position of the object on the screen. Range: 0 to TFT_WIDTH (160 for M5StickC Plus).
+int objectY = 0;        // Vertical position of the object on the screen. Range: 0 to TFT_HEIGHT (80 for M5StickC Plus).
+float speedX = 0;       // Horizontal speed of the object. Constrained later to range: -5 to 5 for smoother motion.
+float speedY = 0;       // Vertical speed of the object. Constrained to range: -5 to 5.
+float accelFactor = 50.0;  // Sensitivity factor for horizontal movement. Higher values increase horizontal responsiveness.
+float verticalFactor = 30.0;  // Sensitivity factor for vertical movement. Higher values increase vertical responsiveness.
 
+// Define a secondary UART (Serial1) for external communication
+HardwareSerial MySerial(1);  // Serial1 (UART1) is used, which supports custom TX and RX pins.
+
+// Setup function, runs once at startup
 void setup() {
-  M5.begin();  // Initialize M5StickC Plus
-  M5.Lcd.fillScreen(BLACK);  // Fill the screen with black initially
-  M5.Lcd.setTextSize(1);  // Set text size for output
-  M5.IMU.Init();  // Initialize the IMU (accelerometer and gyroscope)
+  M5.begin();  // Initialize the M5StickC Plus, including display, buttons, and IMU.
+  M5.Lcd.fillScreen(BLACK);  // Clear the display by filling it with a black color.
+  M5.Lcd.setTextSize(1);  // Set the text size for any messages displayed on the screen.
+  M5.IMU.Init();  // Initialize the onboard IMU (accelerometer and gyroscope).
 
-  // Set initial object position
-  objectX = TFT_WIDTH / 2;
-  objectY = TFT_HEIGHT / 2;
+  // Set initial position of the object to the center of the screen.
+  objectX = TFT_WIDTH / 2;  // Center horizontally based on the screen width (80).
+  objectY = TFT_HEIGHT / 2;  // Center vertically based on the screen height (40).
+
+  // Initialize the Serial Monitor for debugging at a baud rate of 115200.
+  Serial.begin(115200);
+
+  // Initialize UART communication on pins 32 (RX) and 33 (TX) with a baud rate of 115200.
+  MySerial.begin(115200, SERIAL_8N1, 32, 33);  // Configure with 8 data bits, no parity, and 1 stop bit.
 }
 
+// Main loop function runs continuously after setup.
 void loop() {
-  float ax, ay, az;  // Variables to store accelerometer data
+  float ax, ay, az;  // Variables to store accelerometer readings. Range: approximately -1.0 to 1.0.
 
-  // Get accelerometer data
+  // Retrieve real-time accelerometer data.
   M5.IMU.getAccelData(&ax, &ay, &az);
 
-  // Print accelerometer values for debugging
+  // Print accelerometer data to the Serial Monitor (useful for debugging).
   Serial.print("ax: ");
-  Serial.print(ax);
+  Serial.print(ax);  // X-axis tilt value.
   Serial.print(" ay: ");
-  Serial.print(ay);
+  Serial.print(ay);  // Y-axis tilt value.
   Serial.print(" az: ");
-  Serial.println(az);
+  Serial.println(az);  // Z-axis (gravity) value.
 
-  // Invert the X-axis movement by negating the accelerometer X value
-  speedX += -ax * accelFactor;  // Invert the X direction
-  speedY += ay * verticalFactor;   // Increased sensitivity for Y direction
+  // Send accelerometer data via UART to an external device.
+  MySerial.print("ax: ");
+  MySerial.print(ax);
+  MySerial.print(" ay: ");
+  MySerial.print(ay);
+  MySerial.print(" az: ");
+  MySerial.println(az);
 
-  // Limit the speed to prevent the object from moving too fast
+  // Calculate horizontal and vertical speed based on accelerometer input.
+  speedX += -ax * accelFactor;  // Invert X-axis movement for correct screen direction.
+  speedY += ay * verticalFactor;  // Direct Y-axis movement, scaled by vertical sensitivity.
+
+  // Constrain speed to avoid excessively fast movement. Range: -5 to 5.
   speedX = constrain(speedX, -5, 5);
   speedY = constrain(speedY, -5, 5);
 
-  // Update object's position based on speed
+  // Update object's new position based on speed.
   int newObjectX = objectX + speedX;
   int newObjectY = objectY + speedY;
 
-  // Make sure the object stays within the screen bounds
+  // Ensure the object stays within screen bounds, accounting for its size.
   newObjectX = constrain(newObjectX, OBJECT_SIZE, TFT_WIDTH - OBJECT_SIZE);
   newObjectY = constrain(newObjectY, OBJECT_SIZE, TFT_HEIGHT - OBJECT_SIZE);
 
-  // Only clear the screen and draw the ball if the position has changed
+  // Redraw the object only if its position has changed.
   if (newObjectX != objectX || newObjectY != objectY) {
-    objectX = newObjectX;
-    objectY = newObjectY;
+    objectX = newObjectX;  // Update the object's horizontal position.
+    objectY = newObjectY;  // Update the object's vertical position.
 
-    // Clear the screen before redrawing the object
-    M5.Lcd.fillScreen(BLACK);
-
-    // Draw the object (a circle)
-    M5.Lcd.fillCircle(objectX, objectY, OBJECT_SIZE, YELLOW);
+    M5.Lcd.fillScreen(BLACK);  // Clear the screen before redrawing to avoid ghosting.
+    M5.Lcd.fillCircle(objectX, objectY, OBJECT_SIZE, YELLOW);  // Draw the object (circle) at the new position.
   }
 
-  delay(15);  // Delay for smoother motion
+  delay(15);  // Small delay to smooth out movement and reduce flickering (15 ms).
 }
