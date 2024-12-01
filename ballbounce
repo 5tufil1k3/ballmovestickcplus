@@ -1,0 +1,113 @@
+#include <M5StickCPlus.h>
+
+// Define object properties
+#define OBJECT_SIZE 10  // Diameter of the circular object in pixels.
+int objectX = 0;        // Horizontal position of the object on the screen.
+int objectY = 0;        // Vertical position of the object on the screen.
+float speedX = 0;       // Horizontal speed of the object.
+float speedY = 0;       // Vertical speed of the object.
+float accelFactor = 0.5;  // Sensitivity factor for horizontal movement.
+float verticalFactor = 0.5;  // Sensitivity factor for vertical movement.
+float maxSpeed = 8.0;   // Maximum speed the ball can reach (you can tweak this).
+float speedIncreaseFactor = 1.1;  // Factor to increase speed on bounce
+
+// Define timing variables
+unsigned long lastPrintTime = 0;  // Last time accelerometer data was printed
+unsigned long printInterval = 200;  // Interval to print accelerometer data (in ms)
+
+unsigned long lastMovementTime = 0;  // Last time ball position was updated
+unsigned long movementInterval = 20;  // Interval to update ball position (in ms)
+
+// Define a secondary UART (Serial1) for external communication
+HardwareSerial MySerial(1);  // Serial1 (UART1) is used, which supports custom TX and RX pins.
+
+void setup() {
+  M5.begin();  // Initialize the M5StickC Plus, including display, buttons, and IMU.
+  M5.Lcd.fillScreen(BLACK);  // Clear the display by filling it with a black color.
+  M5.Lcd.setTextSize(1);  // Set the text size for any messages displayed on the screen.
+  M5.IMU.Init();  // Initialize the onboard IMU (accelerometer and gyroscope).
+
+  // Set initial position of the object to the center of the screen.
+  objectX = TFT_WIDTH / 2;  // Center horizontally based on the screen width (80).
+  objectY = TFT_HEIGHT / 2;  // Center vertically based on the screen height (40).
+
+  // Initialize the Serial Monitor for debugging at a baud rate of 9600.
+  Serial.begin(115200);
+
+  // Initialize UART communication on pins 32 (RX) and 33 (TX) with a baud rate of 115200.
+  MySerial.begin(115200, SERIAL_8N1, 32, 33);  // Configure with 8 data bits, no parity, and 1 stop bit.
+}
+
+void loop() {
+  unsigned long currentMillis = millis();  // Get the current time
+  float ax, ay, az;  // Variables to store accelerometer readings.
+
+  // Retrieve real-time accelerometer data.
+  M5.IMU.getAccelData(&ax, &ay, &az);
+
+  // Control accelerometer data output at the specified interval
+  if (currentMillis - lastPrintTime >= printInterval) {
+    // Print accelerometer data to the Serial Monitor
+    Serial.print("ax: ");
+    Serial.print(ax);
+    Serial.print(" ay: ");
+    Serial.print(ay);
+    Serial.print(" az: ");
+    Serial.println(az);
+
+    // Send accelerometer data via UART to an external device.
+    MySerial.print("ax: ");
+    MySerial.print(ax);
+    MySerial.print(" ay: ");
+    MySerial.print(ay);
+    MySerial.print(" az: ");
+    MySerial.println(az);
+
+    // Update the last print time
+    lastPrintTime = currentMillis;
+  }
+
+  // Control object movement at the specified interval
+  if (currentMillis - lastMovementTime >= movementInterval) {
+    // Gradually increase the speed based on accelerometer input
+    speedX += -ax * accelFactor;  // Invert X-axis movement for correct screen direction
+    speedY += ay * verticalFactor;  // Direct Y-axis movement, scaled by vertical sensitivity
+
+    // Constrain the speed to avoid excessively fast movement but allow momentum build-up
+    speedX = constrain(speedX, -maxSpeed, maxSpeed);
+    speedY = constrain(speedY, -maxSpeed, maxSpeed);
+
+    // Update object's new position based on speed
+    int newObjectX = objectX + speedX;
+    int newObjectY = objectY + speedY;
+
+    // Check for collisions with screen boundaries and make the ball bounce with increased speed
+    if (newObjectX <= OBJECT_SIZE || newObjectX >= TFT_WIDTH - OBJECT_SIZE) {
+      speedX = -speedX * speedIncreaseFactor;  // Reverse horizontal speed and increase speed
+      newObjectX = constrain(newObjectX, OBJECT_SIZE, TFT_WIDTH - OBJECT_SIZE);  // Ensure ball stays within bounds
+    }
+    if (newObjectY <= OBJECT_SIZE || newObjectY >= TFT_HEIGHT - OBJECT_SIZE) {
+      speedY = -speedY * speedIncreaseFactor;  // Reverse vertical speed and increase speed
+      newObjectY = constrain(newObjectY, OBJECT_SIZE, TFT_HEIGHT - OBJECT_SIZE);  // Ensure ball stays within bounds
+    }
+
+    // Ensure the object stays within screen bounds after bounce
+    newObjectX = constrain(newObjectX, OBJECT_SIZE, TFT_WIDTH - OBJECT_SIZE);
+    newObjectY = constrain(newObjectY, OBJECT_SIZE, TFT_HEIGHT - OBJECT_SIZE);
+
+    // Redraw the object only if its position has changed
+    if (newObjectX != objectX || newObjectY != objectY) {
+      objectX = newObjectX;  // Update the object's horizontal position
+      objectY = newObjectY;  // Update the object's vertical position
+
+      M5.Lcd.fillScreen(BLACK);  // Clear the screen before redrawing
+      M5.Lcd.fillCircle(objectX, objectY, OBJECT_SIZE, YELLOW);  // Draw the object at the new position
+    }
+
+    // Update the last movement time
+    lastMovementTime = currentMillis;
+  }
+
+  // Small delay to reduce flickering
+  delay(15);  
+}
