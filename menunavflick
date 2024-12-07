@@ -1,7 +1,8 @@
 #include <M5StickCPlus.h>
 
 // Menu configuration
-const char* menuItems[] = {"Option 1", "Option 2", "Option 3", "Option 4"};
+const char* menuItems[] = {"Option 1", "Option 2", "Option 3", "Option 4", "Option 5", 
+                           "Option 6", "Option 7", "Option 8", "Option 9", "Option 10"};
 int menuIndex = 0; // Currently selected menu item
 int menuSize = sizeof(menuItems) / sizeof(menuItems[0]);
 
