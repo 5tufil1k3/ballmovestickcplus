@@ -1,0 +1,90 @@
+#include <M5StickCPlus.h>
+
+#define CAR_WIDTH 16
+#define CAR_HEIGHT 24
+#define SCREEN_WIDTH 140
+#define SCREEN_HEIGHT 240
+#define ROAD_WIDTH 80
+
+// Player car position
+float carX = SCREEN_WIDTH / 2 - CAR_WIDTH / 2;  // Center horizontally
+float carY = SCREEN_HEIGHT - CAR_HEIGHT - 5;    // Positioned near the bottom with padding
+float speed = 2.0;                  // Normal speed
+float forwardSpeed = 5.0;           // Forward speed when A is pressed
+float turnSensitivity = 50.0;       // Gyroscope sensitivity for car control
+
+// Road properties
+int roadCenter = SCREEN_WIDTH / 2;  // Center of the road
+float sectionHeight = SCREEN_HEIGHT / 4.0; // Height of each section
+
+// Section zones (1 to 4 from top to bottom)
+int section = 4; // Start in the bottom section (Section 4)
+
+void setup() {
+  M5.begin();
+  M5.IMU.Init();
+  M5.Lcd.setRotation(4);            // Correct rotation for vertical screen
+  M5.Lcd.fillScreen(BLACK);
+  drawCar();
+}
+
+void loop() {
+  float ax, ay, az;
+  M5.IMU.getAccelData(&ax, &ay, &az);
+
+  // Adjust car position based on gyroscope tilt
+  carX += -ax * turnSensitivity;
+  carX = constrain(carX, 10.0f, SCREEN_WIDTH - CAR_WIDTH - 10.0f);
+
+  // Determine if car should move forward based on the tilt (negative AY value = downwards tilt)
+  if (ay < -0.5) { // Tilt downwards to move forward
+    if (section > 1) {
+      section--;  // Move forward to the next section
+      carY = sectionHeight * section + 5;  // Update car's vertical position accordingly
+    }
+  }
+
+  // Handle the "A" button press logic for manual movement
+  if (M5.BtnA.isPressed()) {
+    if (section > 1) {
+      section--;  // Move forward to the next section
+      carY = sectionHeight * section + 5;  // Update car's vertical position accordingly
+    }
+  }
+
+  // Keep the road moving like a treadmill (i.e., moving upwards)
+  roadCenter += random(-1, 2);  // Small random shift for road curvature
+  roadCenter = constrain(roadCenter, ROAD_WIDTH / 2 + 10, SCREEN_WIDTH - ROAD_WIDTH / 2 - 10);
+
+  // Clear screen and draw updated scene
+  M5.Lcd.fillScreen(BLACK);
+  drawRoad();
+  drawDottedLine();
+  drawCar();
+
+  delay(50);  // Control frame rate
+}
+
+// Draw the player's car
+void drawCar() {
+  M5.Lcd.fillRect(carX, carY, CAR_WIDTH, CAR_HEIGHT, YELLOW);
+}
+
+// Draw the road with curved edges
+void drawRoad() {
+  for (int y = 0; y < SCREEN_HEIGHT; y += 10) {
+    int leftEdge = roadCenter - ROAD_WIDTH / 3;
+    int rightEdge = roadCenter + ROAD_WIDTH / 3;
+
+    M5.Lcd.drawLine(leftEdge, y, leftEdge, y + 10, WHITE);
+    M5.Lcd.drawLine(rightEdge, y, rightEdge, y + 10, WHITE);
+  }
+}
+
+// Draw a dotted line down the middle of the road
+void drawDottedLine() {
+  int middleX = roadCenter;
+  for (int y = 0; y < SCREEN_HEIGHT; y += 20) {
+    M5.Lcd.drawLine(middleX, y, middleX, y + 10, WHITE);
+  }
+}
