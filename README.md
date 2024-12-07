@@ -14,6 +14,9 @@ then:
 infiniteball: the ball really quickly gains momentum and  into ∞ symbol
 
 then:
+menunavigationv1: the first iteration. really flickable
+
+then:
 menunavflick: more directional. menu goes next and back
 
 then:
