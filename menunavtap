@@ -7,7 +7,7 @@ int menuIndex = 0;
 int menuSize = sizeof(menuItems) / sizeof(menuItems[0]);
 
 // Threshold for movement detection
-const float movementThreshold = 2.00; // Threshold for ax, ay, az to trigger menu change
+const float movementThreshold = 3.00; // Threshold for ax, ay, az to trigger menu change
 unsigned long lastMoveTime = 0;
 const unsigned long debounceDelay = 300; // 300ms debounce time to avoid multiple triggers
 
