@@ -1,0 +1,58 @@
+#include <M5StickCPlus.h>
+
+// Menu configuration
+const char* menuItems[] = {"Option 1", "Option 2", "Option 3", "Option 4", "Option 5", 
+                           "Option 6", "Option 7", "Option 8", "Option 9", "Option 10"};
+int menuIndex = 0;
+int menuSize = sizeof(menuItems) / sizeof(menuItems[0]);
+
+// Threshold for movement detection
+const float movementThreshold = 2.00; // Threshold for ax, ay, az to trigger menu change
+unsigned long lastMoveTime = 0;
+const unsigned long debounceDelay = 300; // 300ms debounce time to avoid multiple triggers
+
+void setup() {
+  M5.begin();
+  M5.IMU.Init();
+  M5.Lcd.setRotation(1);
+  M5.Lcd.fillScreen(BLACK);
+  M5.Lcd.setTextSize(2);
+  
+  // Display initial menu
+  displayMenu();
+}
+
+void loop() {
+  float ax, ay, az;
+  M5.IMU.getAccelData(&ax, &ay, &az);
+
+  unsigned long currentTime = millis();
+
+  // Detect movement above or below the threshold for menu navigation
+  if ((currentTime - lastMoveTime) > debounceDelay) {
+    if (ax > movementThreshold || ax < -movementThreshold || 
+        ay > movementThreshold || ay < -movementThreshold || 
+        az > movementThreshold || az < -movementThreshold) {
+      // Move to the next menu item
+      moveMenuNext();
+      lastMoveTime = currentTime;
+    }
+  }
+
+  M5.update();
+}
+
+// Move to the next menu item (wraps around to the first option if at the last)
+void moveMenuNext() {
+  menuIndex++;
+  if (menuIndex >= menuSize) menuIndex = 0; // Wrap around to the first item
+  displayMenu();
+}
+
+// Display the current menu item
+void displayMenu() {
+  M5.Lcd.fillScreen(BLACK);
+  M5.Lcd.setCursor(10, 30);
+  M5.Lcd.setTextColor(WHITE, BLACK);
+  M5.Lcd.printf("Selected: %s", menuItems[menuIndex]);
+}
