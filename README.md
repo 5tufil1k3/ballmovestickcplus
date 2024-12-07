@@ -1,3 +1,11 @@
+ay +1= up /\
+ay -1=down \/
+
+ax +1= left <
+ax -1= right >
+
+az +1= screen up
+az -1= screen down
 
 this started cause i wanted to make a ball move around the screen based on me moving the m5stickcplus. 
 then i realized it could make a good way to navigate the stick.
