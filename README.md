@@ -27,4 +27,5 @@ menunavtap: gets acceleration data. over 3.00 registers menu - next
 
   *CHANGE M5.Lcd.setRotation(1); change (1) to 1-4 to set screen rotation
 
+Menu Demo: https://youtube.com/shorts/UQKZXIln4E4?feature=share
 
