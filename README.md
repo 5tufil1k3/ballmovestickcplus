@@ -20,9 +20,11 @@ then:
 menunavflick: more directional. menu goes next and back
 
 then:
-menunavtap: gets acceleration data. over 2.00 registers menu - next
+menunavtap: gets acceleration data. over 3.00 registers menu - next
 
-  *CHANGE -const float movementThreshold = 1.50; // Threshold for ax, ay, az to trigger menu change
-        if you want to make it more or less sensitive change value. 2 is most stable. less unitentional movement. 1 very responsieve. quick flicks. will probably replace flick navigation with this and just change value... 1.5 is a nice medium
+  *CHANGE -const float movementThreshold = 3.00; // Threshold for ax, ay, az to trigger menu change
+        if you want to make it more or less sensitive change the value. 3 is really stable and needs solid tap or hard flick. 2 is best tap imo. 
 
-        M5.Lcd.setRotation(1); change (1) to 1-4 to set screen rotation
+  *CHANGE M5.Lcd.setRotation(1); change (1) to 1-4 to set screen rotation
+
+
