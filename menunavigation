@@ -13,6 +13,10 @@ const float rightThreshold = -0.99; // Move right when ax < -0.99
 unsigned long lastMoveTime = 0;
 const unsigned long debounceDelay = 300; // 300ms delay to avoid multiple triggers
 
+// Serial readout delay
+const unsigned long serialDelay = 500; // Delay between serial prints (in milliseconds)
+unsigned long lastSerialTime = 0;
+
 void setup() {
   M5.begin();
   M5.IMU.Init();
@@ -21,6 +25,9 @@ void setup() {
   M5.Lcd.setTextSize(2);
   M5.Lcd.setCursor(10, 30);
   M5.Lcd.println("Menu Navigation");
+
+  // Start serial communication for debugging
+  Serial.begin(115200);
 
   // Show the initial menu item
   displayMenu();
@@ -32,14 +39,24 @@ void loop() {
 
   unsigned long currentTime = millis();
 
+  // Only print to serial every 'serialDelay' milliseconds
+  if ((currentTime - lastSerialTime) > serialDelay) {
+    // Print the accelerometer values to the serial monitor
+    Serial.print("ax: "); Serial.print(ax, 2);
+    Serial.print("  ay: "); Serial.print(ay, 2);
+    Serial.print("  az: "); Serial.println(az, 2);
+
+    lastSerialTime = currentTime; // Update the last serial print time
+  }
+
   // Navigate menu
   if ((currentTime - lastMoveTime) > debounceDelay) {
-    if (ax > leftThreshold) {
+    if (ax > leftThreshold) { // Move left
       menuIndex--;
       if (menuIndex < 0) menuIndex = menuSize - 1; // Wrap around to the last item
       lastMoveTime = currentTime;
       displayMenu();
-    } else if (ax < rightThreshold) {
+    } else if (ax < rightThreshold) { // Move right
       menuIndex++;
       if (menuIndex >= menuSize) menuIndex = 0; // Wrap around to the first item
       lastMoveTime = currentTime;
