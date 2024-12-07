@@ -1,20 +1,3 @@
-STICK C PLUS
-______________________
-|   _____________   |  \	
-|   |           |   |   \
-|   |           |   |    |
-|   |           |   |    |
-|   |           |   |    |
-|   |           |   |    |
-|   |___________|   |    |
-|    ___________    |    |
-|   |   /\ /\   |   |    |
-|   |  // ^ \\  |   |    |
-|___________________|    |
-\     (=========)    \   |
- \____[ o o o o ]______\ |
-  
-
 
 this started cause i wanted to make a ball move around the screen based on me moving the m5stickcplus. 
 then i realized it could make a good way to navigate the stick.
