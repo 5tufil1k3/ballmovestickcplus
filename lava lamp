@@ -1,0 +1,117 @@
+#include <M5StickCPlus.h>
+
+#define MAX_BALLS 12  // Maximum number of balls on screen
+#define MIN_BALLS 5   // Minimum number of balls on screen
+
+struct Ball {
+  int x, y;        // Position of the ball
+  float speedX, speedY;   // Speed of the ball
+  float gravity;    // Gravity effect on the ball
+  bool isVisible;   // Whether the ball is visible
+  int size;         // Size of the ball (randomized)
+};
+
+Ball balls[MAX_BALLS];  // Array to store the balls
+
+float maxSpeed = 1.5;   // Maximum speed the ball can reach
+float speedIncreaseFactor = 1.00;  // Factor to increase speed on bounce
+
+unsigned long lastMovementTime = 0;  // Last time ball position was updated
+unsigned long movementInterval = 40;  // Interval to update ball position (in ms)
+
+unsigned long lastUpdateTime = 0;  // Last time objects were updated (5 seconds)
+unsigned long updateInterval = 5000;  // 5 seconds interval to update balls visibility
+
+void setup() {
+  M5.begin();
+  M5.Lcd.fillScreen(BLACK);
+  M5.Lcd.setTextSize(1);
+  M5.IMU.Init();
+
+  // Initialize the balls with random positions, speeds, sizes, and set them as visible
+  for (int i = 0; i < MAX_BALLS; i++) {
+    balls[i].x = random(0, TFT_WIDTH);
+    balls[i].y = random(0, TFT_HEIGHT);
+    balls[i].speedX = random(-2, 2);
+    balls[i].speedY = random(-2, 2);
+    balls[i].gravity = 0.1;  // Gravity effect for the ball
+    balls[i].isVisible = false; // Initially, no balls are visible
+    balls[i].size = random(5, 15); // Random size between 5 and 15
+  }
+
+  // Start with a random number of visible balls between MIN_BALLS and MAX_BALLS
+  int initialBalls = random(MIN_BALLS, MAX_BALLS + 1);
+  for (int i = 0; i < initialBalls; i++) {
+    balls[i].isVisible = true;  // Set the first 'initialBalls' balls as visible
+  }
+}
+
+void loop() {
+  unsigned long currentMillis = millis();  // Get the current time
+
+  // Every 5 seconds, randomly add or remove balls to keep between MIN_BALLS and MAX_BALLS
+  if (currentMillis - lastUpdateTime >= updateInterval) {
+    int visibleBallsCount = 0;
+    for (int i = 0; i < MAX_BALLS; i++) {
+      if (balls[i].isVisible) {
+        visibleBallsCount++;
+      }
+    }
+
+    // Calculate how many balls need to be added or removed to stay within the visible range
+    int ballsToAdd = random(0, 4); // Add 0 to 3 new balls
+    int ballsToRemove = visibleBallsCount - random(MIN_BALLS, MAX_BALLS + 1); // Remove some balls if there are more than needed
+
+    // Ensure visible balls are within range
+    if (visibleBallsCount + ballsToAdd - ballsToRemove >= MIN_BALLS && visibleBallsCount + ballsToAdd - ballsToRemove <= MAX_BALLS) {
+      // Add or remove balls to adjust visibility
+      for (int i = 0; i < ballsToAdd; i++) {
+        int index = random(0, MAX_BALLS);
+        balls[index].isVisible = true;  // Make the ball visible
+        balls[index].size = random(5, 20);  // Randomize the size of the new ball
+      }
+
+      for (int i = 0; i < ballsToRemove; i++) {
+        int index = random(0, MAX_BALLS);
+        balls[index].isVisible = false; // Hide the ball
+      }
+    }
+
+    lastUpdateTime = currentMillis;  // Update the time for the next change
+  }
+
+  unsigned long currentMovementTime = millis();
+  if (currentMovementTime - lastMovementTime >= movementInterval) {
+    M5.Lcd.fillScreen(BLACK);  // Clear the screen before redrawing
+
+    for (int i = 0; i < MAX_BALLS; i++) {
+      if (!balls[i].isVisible) {
+        continue;  // Skip balls that are not visible
+      }
+
+      // Apply gravity to the balls
+      balls[i].speedY += balls[i].gravity;
+
+      // Update positions based on speed
+      balls[i].x += balls[i].speedX;
+      balls[i].y += balls[i].speedY;
+
+      // Bounce the balls off the screen boundaries
+      if (balls[i].x <= balls[i].size || balls[i].x >= TFT_WIDTH - balls[i].size) {
+        balls[i].speedX = -balls[i].speedX * speedIncreaseFactor;
+        balls[i].x = constrain(balls[i].x, balls[i].size, TFT_WIDTH - balls[i].size);
+      }
+      if (balls[i].y <= balls[i].size || balls[i].y >= TFT_HEIGHT - balls[i].size) {
+        balls[i].speedY = -balls[i].speedY * speedIncreaseFactor;
+        balls[i].y = constrain(balls[i].y, balls[i].size, TFT_HEIGHT - balls[i].size);
+      }
+
+      // Draw the ball if it is visible
+      M5.Lcd.fillCircle(balls[i].x, balls[i].y, balls[i].size, GREEN);
+    }
+
+    lastMovementTime = currentMovementTime;  // Update the last movement time
+  }
+
+  delay(15);  // Small delay to reduce flickering
+}
